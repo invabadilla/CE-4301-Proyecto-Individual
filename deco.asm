@@ -18,6 +18,7 @@ _start:                  ;tell linker entry point
     mov r8, 0           ; contador de numeros
 
 
+
 read_loop:
 ; Establecer el puntero de archivo en la posición deseada
     mov eax, esi         ; posición deseada (por ejemplo, 1 bytes desde el inicio del archivo)
@@ -46,6 +47,8 @@ read_loop:
    ;mov edx, 28
    ;int 0x80
 
+    mov eax, 0        ; contador de bits
+
 search_loop:
 
     cmp byte [info+esi+edi], 0 ; verifica si el buffer está vacío
@@ -53,162 +56,164 @@ search_loop:
 
     cmp byte [info+esi+edi], ' ' ; compara el byte actual con un espacio en blanco
     je space_found
+
+    movzx ecx, byte [info+esi+edi]
+    sub ecx,48
+    imul eax,10
+    add eax,ecx
+
     add edi,1               ; incrementa la posición actual en el buffer
     cmp edi, 32           ; verifica si se ha llegado al final del buffer
     je end_search
     jmp search_loop
+
 space_found:
-
-    ;add esi,1
-
-    mov eax, esi       ;Copia de puntero inicial
-    mov ebx, edi       ;copia de puntero final
-
-    ;add edi, esi       ; suma la posición actual en el buffer a la posición del primer espacio en blanco
-    ; Set up the source and destination pointers
-    mov ecx, eax
-    add ecx, info
-    mov esi,  ecx    ; Source pointer
-
     cmp r8,0
     je s_num1
     jne s_num2
 
 s_num1:
-    mov edi, num1   ; Destination pointer
 
-    cmp eax,0
-    je s1_num1
-    jmp s2_num1
-    ; Set up the length to copy
-s1_num1:
-    mov ecx, ebx       ;Caso en el que esi es 0
-    ;sub ecx, eax
+        ; Convertir el número decimal a binario
+    mov ecx,0
+
+    convert_loop1:
+
+        mov ebx, num1   ; puntero al comienzo del buffer
+        add ebx,7
+        sub ebx, ecx     ; suma el valor de r9 a rcx
+        mov edx, 0        ; limpiar edx
+        div dword [two]   ; dividir eax por 2
+        add dl,48         ;  ASCII quitar para print
+        mov [ebx], dl     ; almacenar el resto en el bit correspondiente
+        add ecx,1           ; incrementar el contador de bits
+        cmp eax, 0        ; verificar si se ha completado la conversión
+        jne convert_loop1  ; si no, volver al comienzo del
     jmp next
-
-s2_num1:
-    mov ecx, eax      ;Caso en el que esi es mayor a 0
-    sub ecx, ebx
-    jmp next
-
 
 s_num2:
-    mov edi, num2   ; Destination pointer
-    ; Set up the length to copy
-    mov ecx, eax
-    sub ecx, ebx
+         ; Convertir el número decimal a binario
+    mov ecx,0
+    convert_loop2:
+        mov ebx, num2   ; puntero al comienzo del buffer
+        add ebx, 7
+        sub ebx, ecx     ; suma el valor de r9 a rcx
+        mov edx, 0        ; limpiar edx
+        div dword [two]   ; dividir eax por 2
+        add dl,48        ; ASCII quitar para print
+        mov [ebx], dl     ; almacenar el resto en el bit correspondiente
+        add ecx,1           ; incrementar el contador de bits
+        cmp eax, 0        ; verificar si se ha completado la conversión
+        jne convert_loop2  ; si no, volver al comienzo del
     jmp next
-
-
 next:
 
 
-    ; Copy the buffer
-    cld                 ; Clear the direction flag
-    rep movsb           ; Move the bytes
-
-    mov esi, eax       ;Copia de punteros
-    add esi, ebx       ;Puntero inicial mas el final para obtener el nuevo valor inicial
+    add esi,edi
+    add esi,1        ;Le sumo uno para descartar el espacio en blanco
     mov edi, 0       ;reseteo del contador de bits para saber cuando se encuentra un espacio en blanco
-    mov edx, ecx     ;largo del array
 
-    ;read from file
-   ;mov eax, esi
-   ;mov ebx, [fd_in]
-   ;mov ecx, info
-   ;mov edx, edi
-   ;int 0x80
-
-   ; close the file
-   ;mov eax, 6
-   ;mov ebx, [fd_in]
-   ;int  0x80
-
-    cmp r8,0
-    je p_num1
-    cmp r8,1
-    je p_num2
-
-    jmp next2
-
-p_num1:
-     ; imprimir lo que guardo en num1 del archivo
-   mov eax, 4
-   mov ebx, 1
-   mov ecx, num1
-   mov edx, 3
-   int 0x80
-    jmp next2
-
-p_num2:
-    ; imprimir lo que guardo en num1 del archivo
-   mov eax, 4
-   mov ebx, 1
-   mov ecx, num2
-   mov edx, 3
-   int 0x80
-    jmp next2
-
-next2:
-    add esi,1   ;Le sumo uno para descartar el espacio en blanco
 
     cmp r8,0
     je less
 
     cmp r8,1
-    je less
-
-    cmp r8,2
     je more
+
 
 less:
     add r8,1
     jmp read_loop
 
 more:
+
     mov r8,0  ;Resetear el contador de numeros
 
+    ; Copiar buffer1 a buffer3
+
+    mov ecx,0
+    convert_loop3:
+        mov eax, num2
+        mov ebx, num1   ; puntero al comienzo del buffer
+        add ebx, 8      ; alinear cadena
+        add ebx, ecx    ; suma el valor de la posicion en num1
+        add eax, ecx    ; suma el valor de la poscion en num 2
+        mov edx, [eax]  ; Obtener valor de num2
+        mov [ebx], edx     ; almacenar el valor de num2 en num1
+        add ecx,1           ; incrementar el contador de bits
+        cmp ecx, 8        ; verificar si se ha completado la conversión
+        jne convert_loop3  ; si no, volver al comienzo del
+
+        ; Imprimir el número binario resultante
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, num1
+    mov edx, 16
+    int 0x80
 
 
-    ; Calcular la posición en el archivo donde se encuentra el espacio en blanco
-    ;sub esi, edi           ; resta la posición actual en el buffer para obtener la posición relativa del espacio en blanco
-    ;add esi, eax           ; suma la posición relativa a la posición deseada para obtener la posición absoluta en el archivo
+    ;pasar de binario a decimal
+
+    mov r10,2
+
+    mov ebx, 0 ;Valor almacenado
+
+    mov eax, 8 ; contador de potencia
+    mov edx, num1 ;inicio de buffer num1
+
+
+    ;add ecx, 15 ;final de buffer num1
+
+    bin_to_dec:
+        cmp eax,1
+        je final
+
+        xor rcx,rcx
+
+        mov cl, byte [edx]  ;obtener MSB
+        sub cl, 48
+        comp:
+        cmp ecx,1
+        je jump
+
+        jne_:
+            add edx, 1      ;contador + 1
+            idiv r10        ;dividir potencia entre 2
+            jmp bin_to_dec
+
+        jump:
+            add ebx,eax     ;resultado de multiplicacion mas el valor acumulado
+            jmp jne_
+final:
+
+
+
+
+;jmp read_loop
+
 end_search:
 
-
-
-	
-;   mov esi, info    ;Inicio del buffer info
-;   mov eax, [esi]   ;Primer valor del buffer
-;   sub eax,48       ;Se quita el valor ascii
-;   imul eax, 2     ;Se multiplica
-;   add eax, 48      ;Se agrega formato ascii
-;   mov edi, num    ;Inicio del buffer num
-;   mov [edi], eax  ;Guardar en el primer valor del buffer el registro eax
-;
-;    ;Se imprime el valor manipulado
-;   mov eax, 4
-;   mov ebx, 1
-;   mov ecx, num
-;   mov edx,1
-;   int 0x80
-
-
-       
    mov	eax,1             ;system call number (sys_exit)
    int	0x80              ;call kernel
 
-section	.data
-file_name db 'test.txt', 0
-buffer   db 32
 
 
 section .bss
-fd_out resb 1
 fd_in  resb 1
 info resb 28
-num resb 2
-cont resb 2
-num1 resb 3
-num2 resb 3
+
+
+section	.data
+file_name db 'test.txt',0
+two dd 2    ; valor constante para utilizar en la división por 2
+binary: times 16 db 0
+;num1 db 0000000000000000b, 0
+;num2 db 00000000b, 0
+
+num1 db '0000000000000000', 0
+num2 db '00000000', 0
+
+
+
+
 

@@ -1,83 +1,103 @@
-section .data
-    filename db "test.txt", 0
-    mode     db "r", 0
-    buffer   db 32      ; buffer de lectura
+    mov r8,0  ;Resetear el contador de numeros
 
-section .bss
-fd_out resb 1
-fd_in  resb 1
-info resb 1
+   ; Convertir el primer número en una cadena de caracteres
+    mov al, [num1]
+    mov cl, 10
+    mov bx, 0
+digit_loop1:
+    xor ah, ah
+    div cl
+    add ah, '0'
+    add bx,buffer1
+    mov [bx], ah
+    sub bx,buffer1
+    inc bx
+    test al, al
+    jnz digit_loop1
+
+    ; Convertir el segundo número en una cadena de caracteres
+    mov al, [number2]
+    mov cl, 10
+digit_loop2:
+    xor ah, ah
+    div cl
+    add ah, '0'
+    mov [buffer+bx], ah
+    inc bx
+    test al, al
+    jnz digit_loop2
+
+    ; Concatenar las dos cadenas en una nueva cadena
+    mov byte [buffer+bx], ' '
+    mov cx, bx
+    dec bx
+    mov di, buffer
+concat_loop:
+    mov al, [buffer+bx]
+    mov [di], al
+    inc di
+    dec bx
+    cmp bx, 0
+    jge concat_loop
+
+    ; Convertir la cadena resultante en un número entero
+    mov al, [buffer]
+    sub al, '0'
+    mov bl, 10
+convert_loop:
+    movzx ax, byte [di-1]
+    sub ax, '0'
+    imul bl
+    add al, bl
+    mov bl, al
+    dec di
+    cmp di, buffer
+    jge convert_loop
+
+    ; Imprimir el número entero concatenado
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, buffer
+    mov edx, cx
+    add edx, 1
+    int 0x80
 
 
-section .text
-    global _start
+        mov al, [num1]
+    sub al,48         ;Para quitar formato ASCII
+    mov ch,al         ; desplaza el contenido de eax 8 bits a la izquierda
 
-_start:
-    ; Abrir el archivo en modo de lectura
-    mov eax, 5           ; syscall para abrir archivo
-    mov ebx, filename   ; nombre del archivo
-    mov ecx, mode       ; modo de apertura
-    mov edx, 0777          ;read, write and execute by all
-    int 0x80            ; llama al sistema
-    mov esi, eax        ; guarda el descriptor de archivo en esi
+    mov dl, [num2]
+val1:
+    sub dl, 49
+val2:
+    or rcx, rdx  ; realiza una operación OR entre eax y ebx
 
-
-
-    ; Establecer el puntero de archivo en la posición deseada
-    mov eax, 3         ; posición deseada (por ejemplo, 1 bytes desde el inicio del archivo)
-    mov ebx, esi        ; descriptor de archivo
-    mov ecx, eax        ; posición de desplazamiento
-    mov edx, 0          ; origen de desplazamiento (0 = desde el inicio del archivo)
-    mov eax, 19         ; syscall para establecer el puntero de archivo
-    int 0x80            ; llama al sistema
-
-    ; Leer los datos de esa posición en un buffer
-    mov eax, 3          ; syscall para leer archivo
-    mov ebx, esi        ; descriptor de archivo
-    mov ecx, buffer     ; buffer de lectura
-    mov edx, 32         ; tamaño máximo de lectura
-    int 0x80            ; llama al sistema
-
-    ; close the file
-   mov eax, 6
-   mov ebx, esi
-   int  0x80
-
-        ; Imprimir la cadena que se leyó
-    mov edx, 32          ; tamaño de la cadena a imprimir
-    mov ecx, buffer       ; cadena a imprimir
-    mov ebx, 1            ; descriptor de archivo estándar de salida (stdout)
-    mov eax, 4            ; syscall para escribir en archivo
-    int 0x80              ; llama al sistema
+val:
 
 
-    ; Buscar el primer espacio en blanco en el buffer a partir de la posición deseada
-    mov edi, 0          ; posición actual en el buffer
-    mov ebp, 0          ; posición del primer espacio en blanco después de la posición deseada
-    cmp byte [buffer+edi], 0 ; verifica si el buffer está vacío
-    je end_search
-search_loop:
-    cmp byte [buffer+edi], ' ' ; compara el byte actual con un espacio en blanco
-    je space_found
-    inc edi               ; incrementa la posición actual en el buffer
-    cmp edi, 32           ; verifica si se ha llegado al final del buffer
-    je end_search
-    jmp search_loop
-space_found:
-    add ebp, edi           ; suma la posición actual en el buffer a la posición del primer espacio en blanco
-    ; Calcular la posición en el archivo donde se encuentra el espacio en blanco
-    sub ebp, edi           ; resta la posición actual en el buffer para obtener la posición relativa del espacio en blanco
-    add ebp, eax           ; suma la posición relativa a la posición deseada para obtener la posición absoluta en el archivo
-end_search:
 
-    ; Si no se encontró el espacio en blanco, volver a leer más datos del archivo
-    ;cmp ebp, 0
-    ;je search_loop
-    ;add eax, 32
+******
 
-    ; Imprimir la lectura desde la posición inicial hasta el espacio en blanco que se encontró
-    mov edx, ebp          ; tamaño de la cadena a imprimir (posición del espacio en blanco)
-    mov ecx, buffer       ; cadena a imprimir
-    mov ebx, 1            ; descriptor de archivo estándar de salida (stdout)
-    mov eax, 4            ; syscall para escribir en archivo
-    int 0x80              ; llama al sistema
+
+
+    mov eax, num1    ;eax: dirección del primer byte del primer buffer
+    mov ebx, num2   ; - ebx: dirección del primer byte del segundo buffer
+    mov ecx, len   ; - edx: longitud del segundo buffer
+
+    add eax, len   ; calcular la dirección del primer byte del segundo buffer
+
+loop_start:
+    cmp ecx, 0  ; comprobar si se ha alcanzado el final del bucle
+    je loop_end ; si es así, saltar al final del bucle
+
+    mov dl, [ebx] ; copiar el byte actual del segundo buffer a dl
+    mov [eax], dl ; copiar el byte actual al final del primer buffer
+
+    inc eax      ; incrementar la dirección del primer buffer
+    inc ebx      ; incrementar la dirección del segundo buffer
+    sub ecx, 1      ; decrementar el contador del bucle
+    jmp loop_start ; saltar al inicio del bucle
+
+loop_end:
+
