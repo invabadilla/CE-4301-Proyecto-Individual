@@ -144,12 +144,12 @@ more:
         cmp ecx, 8        ; verificar si se ha completado la conversión
         jne convert_loop3  ; si no, volver al comienzo del
 
-        ; Imprimir el número binario resultante
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, num1
-    mov edx, 16
-    int 0x80
+;        ; Imprimir el número binario resultante
+;    mov eax, 4
+;    mov ebx, 1
+;    mov ecx, num1
+;    mov edx, 16
+;    int 0x80
 
 
     ;pasar de binario a decimal
@@ -243,55 +243,101 @@ loop_start:
 
 loop_end:
 
-    ; Abrir el archivo
-    mov eax, 5        ; Llamada al sistema "open"
-    mov ebx, nombreArchivo  ; Nombre del archivo a abrir
-    mov ecx, 1        ; Modo de apertura (solo escritura)
-    mov edx, 0666     ; Permisos del archivo
-    int 0x80          ; Realizar la llamada al sistema
+    mov [decimal], edx   ;Guardar el numero decodificado en un buffer
 
-    ; Almacenar el descriptor de archivo en el registro ebx
-    mov ebx, eax
+;    ; Abrir el archivo
+;    mov eax, 5        ; Llamada al sistema "open"
+;    mov ebx, file  ; Nombre del archivo a abrir
+;    mov ecx, 1        ; Modo de apertura (solo escritura)
+;    mov edx, 0666     ; Permisos del archivo
+;    int 0x80          ; Realizar la llamada al sistema
+;
+;    ; Almacenar el descriptor de archivo en el registro ebx
+;    mov ebx, eax
 
     ; Convertir el número en una cadena de caracteres
-    mov eax, [numero] ; Cargar el número en el registro eax
+    mov eax, [decimal] ; Cargar el número en el registro eax
     mov ecx, 10       ; Divisor para la conversión
     xor edx, edx      ; Limpiar el registro edx para la división
-    mov esi, buffer   ; Puntero al búfer de caracteres
+    mov edi, decodi   ; Puntero al búfer de caracteres
     cmp eax, 0        ; Comprobar si el número es cero
     jne .convertir    ; Si no es cero, saltar a la conversión
-    mov byte [esi], '0' ; Si es cero, escribir el carácter '0'
-    inc esi           ; Avanzar el puntero al siguiente carácter
+    mov byte [edi], '0' ; Si es cero, escribir el carácter '0'
+    add edi,1           ; Avanzar el puntero al siguiente carácter
     jmp .escribir     ; Saltar a la escritura del archivo
 
 .convertir:
     ; Convertir cada dígito en su representación ASCII
+    xor edx,edx
     div ecx           ; Dividir entre 10 para obtener el resto
     add edx, '0'      ; Convertir el resto en su representación ASCII
-    mov byte [esi], dl ; Escribir el carácter en el búfer
-    inc esi           ; Avanzar el puntero al siguiente carácter
+    mov byte [edi], dl ; Escribir el carácter en el búfer
+    add edi,1           ; Avanzar el puntero al siguiente carácter
     cmp eax, 0        ; Comprobar si se ha llegado al final del número
     jne .convertir    ; Si no, continuar la conversión
 
 .escribir:
-    ; Escribir la cadena de caracteres en el archivo
-    mov eax, 4        ; Llamada al sistema "write"
-    mov ecx, ebx      ; Descriptor de archivo
-    mov edx, esi      ; Dirección del búfer
-    sub edx, buffer   ; Longitud de la cadena
+    ;agregar espacio al final del numero
+    xor edx,edx
+    add edx, ' '
+    mov byte[edi], dl
+
+    ;largo del string a escribir
+    sub edi,decodi
+    inc edi
+
+
+
+;    ; Escribir la cadena de caracteres en el archivo
+;    mov eax, 4        ; Llamada al sistema "write"
+;    mov ecx, ebx      ; Descriptor de archivo
+;    mov edx, edi      ; Dirección del búfer
+;    sub edx, decodi   ; Longitud de la cadena
+;    int 0x80          ; Realizar la llamada al sistema
+
+;    ; Escribir el espacio en blanco en el archivo
+;    mov eax, 4        ; Llamada al sistema "write"
+;    mov ecx, ebx      ; Descriptor de archivo
+;    mov edx, espacio  ; Dirección del espacio en blanco
+;    mov ebx, 1        ; Longitud del espacio en blanco
+;    int 0x80          ; Realizar la llamada al sistema
+
+;    ; Cerrar el archivo
+;    mov eax, 6        ; Llamada al sistema "close"
+;    mov ebx, ecx      ; Descriptor de archivo
+;    int 0x80          ; Realizar la llamada al sistema
+
+; Abrir el archivo en modo de escritura y apuntar al final del archivo
+    mov eax, 5        ; Llamada al sistema "open"
+    mov ebx, file  ; Nombre del archivo a abrir
+    mov ecx, 2        ; Modo de apertura (escritura y apuntar al final)
+    mov edx, 0666     ; Permisos del archivo
     int 0x80          ; Realizar la llamada al sistema
 
-    ; Escribir el espacio en blanco en el archivo
+    ; Apuntar al final del archivo
+    mov eax, 19       ; Llamada al sistema "lseek"
+    mov ecx, ebx      ; Descriptor de archivo
+    mov edx, 0        ; Desplazamiento relativo al final del archivo
+    mov ebx, 2        ; Origen del desplazamiento (final del archivo)
+    int 0x80          ; Realizar la llamada al sistema
+
+    ; Escribir los datos al final del archivo
     mov eax, 4        ; Llamada al sistema "write"
     mov ecx, ebx      ; Descriptor de archivo
-    mov edx, espacio  ; Dirección del espacio en blanco
-    mov ebx, 1        ; Longitud del espacio en blanco
+    mov edx, decodi    ; Dirección de los datos a escribir
+    mov ebx, edi ; Longitud de los datos a escribir
     int 0x80          ; Realizar la llamada al sistema
 
     ; Cerrar el archivo
     mov eax, 6        ; Llamada al sistema "close"
     mov ebx, ecx      ; Descriptor de archivo
     int 0x80          ; Realizar la llamada al sistema
+
+    mov eax, 4
+    mov ebx, 1
+    mov ecx, decodi
+    mov edx, 4
+    int 0x80
 
 
 
@@ -313,6 +359,7 @@ info resb 28
 
 section	.data
 file_name db 'test.txt',0
+file db 'deco.txt',0
 two dd 2    ; valor constante para utilizar en la división por 2
 binary: times 16 db 0
 ;num1 db 0000000000000000b, 0
@@ -320,6 +367,7 @@ binary: times 16 db 0
 
 num1 db '0000000000000000', 0
 num2 db '00000000', 0
+decodi db 4 ,0
 decimal db 00000 , 0
 write db 4, 0
 d dd 1631 , 0
