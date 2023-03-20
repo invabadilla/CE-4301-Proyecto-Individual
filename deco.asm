@@ -183,6 +183,116 @@ more:
         jmp jne_
 
 final:
+    ;Potencia del valor obtenido
+
+     ; Carga los valores en los registros
+    mov eax, ebx ; Base (3)
+    mov ebx, [d] ; Exponente (7)
+    mov ecx, [n] ; Módulo (5)
+
+;     mov eax, 2 ; Base (3)
+;     mov ebx, 5 ; Exponente (7)
+;     mov ecx, 13 ; Módulo (5)
+
+    ; Inicializa el resultado en 1
+    mov edx, 1
+
+loopa:
+    mov r9,0
+;    div ecx   ; eax = eax % ecx
+;    xor ecx,ecx
+;    mov cl, ah
+
+    ;validar si eax es 0
+
+loop_start:
+    ; Si el exponente es cero, termina el bucle
+    cmp ebx, 0
+    je loop_end
+
+    ; Si el exponente es impar, multiplica el resultado por la base
+    test ebx, 1
+    jnz multiply
+
+    ; Si el exponente es par, eleva la base al cuadrado
+    multiply_by_self:
+        mov ebp, edx
+        shr ebx, 1 ; divide el exponente por dos (desplazamiento a la derecha)
+        mul eax      ;Base elevada a la 2
+
+        xor edx,edx
+        div ecx
+        mov eax,edx
+        mov edx, ebp
+        ;and eax, ecx ; reduce el resultado módulo el número dado
+
+        jmp loop_start
+
+    multiply:
+       ; res =  res * x
+        mov ebp, eax   ;Copia de base
+        mul edx       ;mul de base por resultado  edx
+        xor edx,edx
+        div ecx        ;residuo en edx
+        ;mov edx, eax  ;copia del nuevo valor del resultado  edx
+
+        ;and edx, ecx  ;reduce el resultado modulo el numero dado
+
+        mov eax, ebp  ;Copia del valor de la base
+        jmp multiply_by_self
+
+loop_end:
+
+    ; Abrir el archivo
+    mov eax, 5        ; Llamada al sistema "open"
+    mov ebx, nombreArchivo  ; Nombre del archivo a abrir
+    mov ecx, 1        ; Modo de apertura (solo escritura)
+    mov edx, 0666     ; Permisos del archivo
+    int 0x80          ; Realizar la llamada al sistema
+
+    ; Almacenar el descriptor de archivo en el registro ebx
+    mov ebx, eax
+
+    ; Convertir el número en una cadena de caracteres
+    mov eax, [numero] ; Cargar el número en el registro eax
+    mov ecx, 10       ; Divisor para la conversión
+    xor edx, edx      ; Limpiar el registro edx para la división
+    mov esi, buffer   ; Puntero al búfer de caracteres
+    cmp eax, 0        ; Comprobar si el número es cero
+    jne .convertir    ; Si no es cero, saltar a la conversión
+    mov byte [esi], '0' ; Si es cero, escribir el carácter '0'
+    inc esi           ; Avanzar el puntero al siguiente carácter
+    jmp .escribir     ; Saltar a la escritura del archivo
+
+.convertir:
+    ; Convertir cada dígito en su representación ASCII
+    div ecx           ; Dividir entre 10 para obtener el resto
+    add edx, '0'      ; Convertir el resto en su representación ASCII
+    mov byte [esi], dl ; Escribir el carácter en el búfer
+    inc esi           ; Avanzar el puntero al siguiente carácter
+    cmp eax, 0        ; Comprobar si se ha llegado al final del número
+    jne .convertir    ; Si no, continuar la conversión
+
+.escribir:
+    ; Escribir la cadena de caracteres en el archivo
+    mov eax, 4        ; Llamada al sistema "write"
+    mov ecx, ebx      ; Descriptor de archivo
+    mov edx, esi      ; Dirección del búfer
+    sub edx, buffer   ; Longitud de la cadena
+    int 0x80          ; Realizar la llamada al sistema
+
+    ; Escribir el espacio en blanco en el archivo
+    mov eax, 4        ; Llamada al sistema "write"
+    mov ecx, ebx      ; Descriptor de archivo
+    mov edx, espacio  ; Dirección del espacio en blanco
+    mov ebx, 1        ; Longitud del espacio en blanco
+    int 0x80          ; Realizar la llamada al sistema
+
+    ; Cerrar el archivo
+    mov eax, 6        ; Llamada al sistema "close"
+    mov ebx, ecx      ; Descriptor de archivo
+    int 0x80          ; Realizar la llamada al sistema
+
 
 
 
@@ -211,6 +321,10 @@ binary: times 16 db 0
 num1 db '0000000000000000', 0
 num2 db '00000000', 0
 decimal db 00000 , 0
+write db 4, 0
+d dd 1631 , 0
+n dd 5963 , 0
+modulo db 0
 
 
 
