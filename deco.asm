@@ -154,36 +154,34 @@ more:
 
     ;pasar de binario a decimal
 
-    mov r10,2
-
     mov ebx, 0 ;Valor almacenado
 
-    mov eax, 8 ; contador de potencia
-    mov edx, num1 ;inicio de buffer num1
-
-
-    ;add ecx, 15 ;final de buffer num1
+    mov eax, 1	 ; contador de potencia
+    mov r9, 15    ;offset del buffer num1
 
     bin_to_dec:
-        cmp eax,1
+        cmp eax,65536   ;Compara si la potencia es 2^16
         je final
 
-        xor rcx,rcx
+        xor rcx,rcx     ;Limpia el registro cx
 
-        mov cl, byte [edx]  ;obtener MSB
-        sub cl, 48
+        mov cl, byte [num1+r9]  ;obtener bit LSB
+        sub cl, 48              ;Se resta el formato ascii
         comp:
-        cmp ecx,1
+        cmp ecx,1               ;Si el valor es 1 se suma al resultado
         je jump
+        jmp jne_
 
-        jne_:
-            add edx, 1      ;contador + 1
-            idiv r10        ;dividir potencia entre 2
-            jmp bin_to_dec
+    jne_:
+        mov ecx,2
+        mul ecx               ;Se multiplica el registro eax por 2
+        sub r9,1               ;offset -1
+        jmp bin_to_dec
 
-        jump:
-            add ebx,eax     ;resultado de multiplicacion mas el valor acumulado
-            jmp jne_
+    jump:
+        add ebx,eax     ;resultado de potencia mas el valor acumulado
+        jmp jne_
+
 final:
 
 
@@ -212,6 +210,7 @@ binary: times 16 db 0
 
 num1 db '0000000000000000', 0
 num2 db '00000000', 0
+decimal db 00000 , 0
 
 
 
