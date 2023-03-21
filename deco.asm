@@ -2,7 +2,20 @@
 section	.text
    global _start         ;must be declared for using gcc
 	
-_start:                  ;tell linker entry point 
+_start:                  ;tell linker entry point
+
+
+ ;create the file
+   mov  eax, 8
+   mov  ebx, file
+   mov  ecx, 0777        ;read, write and execute by all
+   int  0x80             ;call kernel
+
+   ; close the file
+   mov eax, 6
+   mov ebx, eax
+
+
 
 ; Buscar el primer espacio en blanco en el buffer a partir de la posición deseada
     mov edi, 0          ; destino
@@ -173,19 +186,7 @@ more:
         cmp ecx, 8        ; verificar si se ha completado la conversión
         jne convert_loop3  ; si no, volver al comienzo del
 
-       ; imprimir lo que leyo del archivo
-   mov eax, 4
-   mov ebx, 1
-   mov ecx, num1
-   mov edx, 16
-   int 0x80
 
-       ; imprimir lo que leyo del archivo
-   mov eax, 4
-   mov ebx, 1
-   mov ecx, espacio
-   mov edx, 1
-   int 0x80
 
 
     ;pasar de binario a decimal
@@ -261,9 +262,12 @@ loop_start:
 
 loop_end:
 
+
+
     mov r9,0
 
     mov [decimal], edx   ;Guardar el numero decodificado en un buffer
+
 
     ; Convertir el número en una cadena de caracteres
     mov eax, [decimal] ; Cargar el número en el registro eax
@@ -284,7 +288,7 @@ loop_end:
     mov byte [edi], '0' ; Si es cero, escribir el carácter '0'
     sub edi,1           ; Avanzar el puntero al siguiente carácter
     add r9,1
-    jmp .escribir     ; Saltar a la escritura del archivo
+    jmp .comp     ; Saltar a la escritura del archivo
 
 .convertir:
     ; Convertir cada dígito en su representación ASCII
@@ -297,6 +301,16 @@ loop_end:
     cmp eax, 0        ; Comprobar si se ha llegado al final del número
     jne .convertir    ; Si no, continuar la conversión
 
+.comp:
+    mov eax, decodi
+    sub eax, 1
+    cmp edi, eax
+    je .escribir
+
+    mov byte [edi], ' ' ; Si es cero, escribir el carácter '0'
+    sub edi,1           ; Avanzar el puntero al siguiente carácter
+    jmp .comp
+
 .escribir:
     ;agregar espacio al final del numero
 
@@ -305,6 +319,21 @@ loop_end:
     xor rax, rax
     add rax,r9
     mov edi, eax
+
+
+;           ; imprimir lo que leyo del archivo
+;   mov eax, 4
+;   mov ebx, 1
+;   mov ecx, decodi
+;   mov edx, 4
+;   int 0x80
+;
+;       ; imprimir lo que leyo del archivo
+;   mov eax, 4
+;   mov ebx, 1
+;   mov ecx, espacio
+;   mov edx, 1
+;   int 0x80
 
 ;    mov eax, 4
 ;    mov ebx, 1
@@ -332,7 +361,7 @@ _write:
     mov eax, 4 ; sys_write
     mov ebx, dword [fd]
     mov ecx, decodi
-    mov edx, edi ; longitud de la cadena
+    mov edx, 4 ; longitud de la cadena
     int 0x80
 
     ; Cerrar el archivo
@@ -363,7 +392,7 @@ info resb 8
 fd resd 1 ; descriptor de archivo
 
 section	.data
-file_name db 'test.txt',0
+file_name db '5.txt',0
 file db 'deco.txt',0
 two dd 2    ; valor constante para utilizar en la división por 2
 espacio dd 10
@@ -375,7 +404,7 @@ num1 db '0000000000000000', 0
 num2 db '00000000', 0
 ;bnum1 db '0000000000000000', 0
 ;bnum2 db '00000000', 0
-decodi db '    ' ,0
+decodi db '0000' ,0
 decimal db 00000 , 0
 write db 5, 0
 d dd 1631 , 0
