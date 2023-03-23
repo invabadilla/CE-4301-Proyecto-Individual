@@ -1,15 +1,40 @@
 import subprocess
+<<<<<<< HEAD
 import tkinter as tk
 from PIL import Image, ImageTk
+=======
+import PIL.Image as Image
+>>>>>>> write-into-the-file
 
+def fileReader(path):
+    file = open(path, 'r')
+    data = file.read()
+    file.close()
+    return data
 
+<<<<<<< HEAD
 def leer_archivo_txt(nombre_archivo):
     with open(nombre_archivo, 'r') as f:
         contenido = f.read()
     lista_numeros = [float(n) for n in contenido.split()]
     return lista_numeros
+=======
+def toList(data):
+    listedData = []
+    temp = ''
+    for i in data:
+        if i != ' ':
+            temp += i
+        else:
+            listedData.append(int(temp))
+            temp = ''
+    listedData.append(int(temp))
+    return listedData
+>>>>>>> write-into-the-file
 
+if __name__ == "__main__":
 
+<<<<<<< HEAD
 if __name__ == "__main__":
 
     d = input("Ingrese el valor de d: ")
@@ -60,4 +85,16 @@ if __name__ == "__main__":
 
     # Ejecuta la ventana
     root.mainloop()
+=======
+
+    subprocess.call(['./deco'])
+
+    path = "./5.txt"
+    ecryptedPic = fileReader(path)
+    ecryptedPic = toList(ecryptedPic)
+    pic = Image.new('L', (320, 640))
+    pic.putdata(ecryptedPic)
+    pic.save("encripted.png")
+    pic.close()
+>>>>>>> write-into-the-file
 
