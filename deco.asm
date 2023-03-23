@@ -1,8 +1,10 @@
+
 section	.text
    global _start
 	
 _start:                  ;tell linker entry point
 
+<<<<<<< HEAD
    ; Limpiar el archivo donde se almacenan los datos decodificados
    mov  eax, 8           ; Lamada al sistema 'create'
    mov  ebx, file        ; Nombre del archivo
@@ -95,6 +97,36 @@ read_loop:
    mov ecx, 0             ; Acceso a lectura
    mov edx, 0777          ; Permisos
    int  0x80              ; Llamada al sistema
+=======
+
+ ;create the file
+   mov  eax, 8
+   mov  ebx, file
+   mov  ecx, 0777        ;read, write and execute by all
+   int  0x80             ;call kernel
+
+   ; close the file
+   mov eax, 6
+   mov ebx, eax
+
+
+
+; Buscar el primer espacio en blanco en el buffer a partir de la posición deseada
+    mov edi, 0          ; destino
+    mov esi, 0          ; inicio
+    mov r8, 0           ; contador de numeros
+
+
+
+read_loop:
+
+  ;open the file for reading
+   mov eax, 5
+   mov ebx, file_name
+   mov ecx, 0             ;for read only access
+   mov edx, 0777          ;read, write and execute by all
+   int  0x80
+>>>>>>> write-into-the-file
 
    mov  [fd_in], eax
 ; Establecer el puntero de archivo en la posición deseada
@@ -117,6 +149,18 @@ read_loop:
    mov ebx, [fd_in]
    int  0x80
 
+<<<<<<< HEAD
+=======
+;   ; imprimir lo que leyo del archivo
+;   mov eax, 4
+;   mov ebx, 1
+;   mov ecx, info
+;   mov edx, 8
+;   int 0x80
+;
+
+
+>>>>>>> write-into-the-file
     mov eax, 0        ; contador de bits
 
 search_loop:
@@ -241,6 +285,11 @@ more:
         jne convert_loop3  ; si no, volver al comienzo del
 
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> write-into-the-file
     ;pasar de binario a decimal
 
     mov ebx, 0 ;Valor almacenado
@@ -314,6 +363,11 @@ loop_start:
 
 loop_end:
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> write-into-the-file
     mov r9,0
 
     mov [decimal], edx   ;Guardar el numero decodificado en un buffer
@@ -370,6 +424,30 @@ loop_end:
     add rax,r9
     mov edi, eax
 
+<<<<<<< HEAD
+=======
+
+;           ; imprimir lo que leyo del archivo
+;   mov eax, 4
+;   mov ebx, 1
+;   mov ecx, decodi
+;   mov edx, 4
+;   int 0x80
+;
+;       ; imprimir lo que leyo del archivo
+;   mov eax, 4
+;   mov ebx, 1
+;   mov ecx, espacio
+;   mov edx, 1
+;   int 0x80
+
+;    mov eax, 4
+;    mov ebx, 1
+;    mov ecx, decodi
+;    mov edx, 4
+;    int 0x80
+
+>>>>>>> write-into-the-file
 _write:
 
 ; Abrir el archivo en modo escritura
@@ -398,6 +476,15 @@ _write:
     mov ebx, dword [fd]
     int 0x80
 
+<<<<<<< HEAD
+=======
+;    mov eax, 4
+;    mov ebx, 1
+;    mov ecx, decodi
+;    mov edx, 4
+;    int 0x80
+
+>>>>>>> write-into-the-file
     xor edi,edi
 
     jmp read_loop
@@ -407,6 +494,7 @@ end_search:
    mov	eax,1             ;system call number (sys_exit)
    int	0x80              ;call kernel
 
+<<<<<<< HEAD
 
 section .bss
 fd_in  resb 1   ; descriptor de archivos
@@ -425,3 +513,36 @@ num1 db '0000000000000000', 0   ; Buffer para almacenar valor binario
 num2 db '00000000', 0           ; Buffer para almacenar valor binario
 decodi db '0000' ,0             ; Buffer para almacenar valor decodificado
 decimal db 00000 , 0            ; Buffer para almacenar el numero decimal codificado
+=======
+
+
+section .bss
+fd_in  resb 1
+info resb 8
+fd resd 1 ; descriptor de archivo
+
+section	.data
+file_name db '5.txt',0
+file db 'deco.txt',0
+two dd 2    ; valor constante para utilizar en la división por 2
+espacio dd 10
+binary: times 16 db 0
+;num1 db 0000000000000000b, 0
+;num2 db 00000000b, 0
+
+num1 db '0000000000000000', 0
+num2 db '00000000', 0
+;bnum1 db '0000000000000000', 0
+;bnum2 db '00000000', 0
+decodi db '0000' ,0
+decimal db 00000 , 0
+write db 5, 0
+d dd 1631 , 0
+n dd 5963 , 0
+modulo db 0
+
+
+
+
+
+>>>>>>> write-into-the-file
